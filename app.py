@@ -1,8 +1,35 @@
-from flask import Flask,request
+from flask import Flask, request, jsonify
+from flask_mysqldb import MySQL
 from model import recommend_top_all,recommend_top_genre,recommend_similar
 import numpy as np
+import json
 
 app = Flask(__name__)
+
+app.config['MYSQL_HOST'] = 'localhost'
+app.config['MYSQL_USER'] = 'root'
+app.config['MYSQL_PASSWORD'] = 'password'
+app.config['MYSQL_DB'] = 'tmdb'
+
+mysql = MySQL(app)
+
+@app.route('/search/<title>', methods=['GET'])
+def search(title):
+
+        cur = mysql.connect.cursor()
+        try:
+            cur.execute("SELECT title from titles where title like %s or title like %s limit 10", (title +"%","% "+title +"%"))
+        except:
+            print("cant execute sql")
+        response = cur.fetchall()
+        items =[]
+        for row in response:
+            for key in cur.description:
+                items.append({key[0]:value for value in row})
+        res_json = json.dumps(items)
+        # mysql.connection.commit()
+        return res_json
+
 
 
 @app.route('/top',defaults={'no_items':None},methods=['GET'])
